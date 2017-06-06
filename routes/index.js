@@ -49,6 +49,8 @@ router.get('/author', function (req, res, next) {
 // Pagina de ayuda
 router.get('/help', function (req, res, next) {
     res.render('help');
+});
+
 // Pagina de Jugar
 router.get('/randomplay', function(req, res, next) {
     res.render('randomplay');
