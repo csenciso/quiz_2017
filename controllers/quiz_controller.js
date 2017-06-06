@@ -8,7 +8,7 @@ exports.load = function (req, res, next, quizId) {
 
     models.Quiz.findById(quizId, {
         include: [
-            models.Tip,
+            {model: models.Tip, include: [{model: models.User, as: 'Author'}]},
             {model: models.User, as: 'Author'}
         ]
     })
@@ -83,6 +83,7 @@ exports.index = function (req, res, next) {
         findOptions.offset = items_per_page * (pageno - 1);
         findOptions.limit = items_per_page;
         findOptions.include = [{model: models.User, as: 'Author'}];
+        //findOptions.include = [{model: models.Tips, include: [{model: models.User, as: 'Creator'}]}];
 
         return models.Quiz.findAll(findOptions);
     })
@@ -221,4 +222,63 @@ exports.check = function (req, res, next) {
         result: result,
         answer: answer
     });
+
 };
+
+var score = 0;
+// GET /quizzes/randomplay
+exports.randomplay = function (req, res, next) {
+
+    if(!req.session.score) req.session.score = 0;
+    if(req.session.score === 0) req.session.yhc = [-1];
+
+   var answer = req.query.answer || '';
+
+    models.Quiz.count({where:{
+            id:{$notIn: req.session.yhc}
+            }})
+    .then(function(c){
+        al = Math.floor(Math.random() * (c - 0)  + 0);
+        return models.Quiz.findAll({where: 
+            { id: {$notIn: req.session.yhc}
+        }})
+        .then(function(quiz){
+        preg = quiz[al];
+        req.session.yhc.push(preg.id);
+        res.render('quizzes/random_play',{
+            quiz: preg,
+            answer: answer,
+            score: req.session.score
+        });});});
+    };
+
+// GET /quizzes/randomcheck/:quizId
+exports.randomcheck = function (req, res, next) {
+
+    var answer = req.query.answer || "";
+    var result = answer.toLowerCase().trim() === req.quiz.answer.toLowerCase().trim();
+
+    if(result){
+        req.session.score = req.session.score + 1;}
+        else{
+            req.session.score=0;
+            req.session.yhc=[-1];
+        }
+
+    models.Quiz.count()
+    .then(function(c){
+        if(req.session.score === c){
+            req.session.yhc=[-1];
+            req.session.score=0;
+            res.render('quizzes/random_nomore', {
+                score: req.session.score});
+            }
+        else{
+            res.render('quizzes/random_results', {
+                quiz: req.quiz,
+                result: result,
+                score: req.session.score,
+                answer: answer});
+                }
+            });
+    };
