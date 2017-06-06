@@ -226,6 +226,7 @@ exports.check = function (req, res, next) {
 };
 
 var score = 0;
+
 // GET /quizzes/randomplay
 exports.randomplay = function (req, res, next) {
 
